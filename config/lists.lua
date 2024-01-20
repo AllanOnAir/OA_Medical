@@ -80,7 +80,7 @@ InjuryType = {
     [4]     = {{type = "Blessure par balle", temporaire = false}},
     [5]     = {{type = "Coupure", temporaire = false}},
     [6]     = {{type = "Equimause", temporaire = true}},
-    [7]     = {{type = "Equimause", temporaire = true}},
+    [7]     = {{type = "Equimause", temporaire = true}, {type = "Fracture", temporaire = false}},
     [8]     = {{type = "Brulure 70e degrer", temporaire = true}},
     [9]     = {{type = "Brulure 70e degrer", temporaire = true}},
     [10]    = {{type = "Brulure 70e degrer", temporaire = true}},

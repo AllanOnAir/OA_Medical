@@ -5,8 +5,6 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local health = 200
 
 
-
-
 local function createData()
     TriggerServerEvent('OA_Medical:CreateData', QBCore.Functions.GetPlayerData().citizenid)
 end
@@ -31,15 +29,32 @@ function GetDamagingWeapon(ped)
     return nil
 end
 
+function AddWound(weaponType, bone, damage)
+    if weaponType ~= 13 then 
+
+        -- Dégats de chutes sont considerer comme "OTHER"
+        -- Donc en haut de 50 de dégats "OTHER", on considère que c'est une blessure "HEAVY_IMPACT"
+        if weaponType == 11 and damage > 50 then
+            local newWeaponType = 7
+            local Injury = InjuryType[newWeaponType][math.random(1, #InjuryType[newWeaponType])].type
+            print( "Le joueur a une nouvelle blessure : "..Injury.." sur la partie : "..bone)
+            return
+        end
+        -- local Injury = InjuryType[weaponType][math.random(1, #InjuryType[weaponType])].type
+        print("WeaponID ="..weaponType)
+    end
+end
+
 function CheckDamage(ped, bone, weapon, damage)
     if weapon == nil then return end
     if Parts[bone] ~= nil then
-        print("Le joueur s'est fait blesser ici : "..Parts[bone].." avec l'arme : "..weapon.." et a reçu : "..damage.." de dommage")
+        --print("Le joueur s'est fait blesser ici : "..Parts[bone].." avec l'arme : "..weapon.." et a reçu : "..damage.." de dommage")
+        AddWound(weapon, Parts[bone], damage)
     end
 end
 
 AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
-    if player ~= PlayerId() then return end
+    if player ~= PlayerPedId() then return end
     while true do
         local hit, bone = GetPedLastDamageBone(player)
         if hit and bone ~= lastBone and Parts[bones] ~= 'NONE' then
@@ -59,8 +74,6 @@ RegisterCommand("gethealth", function(source, args)
     local playerHealth = GetEntityHealth(PlayerPedId())
     print(health.." / "..playerHealth)
 end)
-
-
 
 
 -- Commande  de test ~~
