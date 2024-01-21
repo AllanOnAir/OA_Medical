@@ -4,21 +4,44 @@ local QBCore = exports['qb-core']:GetCoreObject()
 -- Variables
 local health = 200
 
+-- Functions Reutilisable
 
+function CheckDamage(ped, bone, weapon, damage)
+    if weapon == nil then return end
+    if Parts[bone] ~= nil then
+        --print("Le joueur s'est fait blesser ici : "..Parts[bone].." avec l'arme : "..weapon.." et a reçu : "..damage.." de dommage")
+        AddWound(weapon, Parts[bone], damage)
+    end
+end
+
+function GetLimbInfo(Limb)
+
+    local Data = { currentState = "N/A", currentHp = 404 }
+
+    TriggerServerEvent('OA_Medical:GetLimbInfo', QBCore.Functions.GetPlayerData().citizenid, Limb)
+    RegisterNetEvent('OA_Medical:SendLimbInfo')
+    AddEventHandler("OA_Medical:SendLimbInfo", function (currentState, currentHp)
+        Data.currentState = currentState
+        Data.currentHp = currentHp
+    end)
+    while Data.currentState == "N/A" do
+        Wait(0)
+    end
+    return Data
+end
+
+function MedicalChange(bodyPart, state, hp)
+    TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
+end
+
+
+-- Code de base
 local function createData()
     TriggerServerEvent('OA_Medical:CreateData', QBCore.Functions.GetPlayerData().citizenid)
 end
 
-RegisterCommand("medicalcreate", function(source, args)
-    createData()
-end)
 
-RegisterCommand("medicalchange", function(source, args)
-    local bodyPart = args[1]
-    local state = args[2]
-    local hp = tonumber(args[3])
-    TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
-end)
+
 
 function GetDamagingWeapon(ped)
     for k, v in pairs(Weapons) do
@@ -31,27 +54,27 @@ end
 
 function AddWound(weaponType, bone, damage)
     if weaponType ~= 13 then 
-
+        local Injury = InjuryType[weaponType][math.random(1, #InjuryType[weaponType])].type
         -- Dégats de chutes sont considerer comme "OTHER"
         -- Donc en haut de 50 de dégats "OTHER", on considère que c'est une blessure "HEAVY_IMPACT"
         if weaponType == 11 and damage > 50 then
             local newWeaponType = 7
             local Injury = InjuryType[newWeaponType][math.random(1, #InjuryType[newWeaponType])].type
-            print( "Le joueur a une nouvelle blessure : "..Injury.." sur la partie : "..bone)
+            NewWound(bone, Injury, damage)
             return
         end
-        -- local Injury = InjuryType[weaponType][math.random(1, #InjuryType[weaponType])].type
-        print("WeaponID ="..weaponType)
+        NewWound(bone, Injury, damage)
     end
 end
 
-function CheckDamage(ped, bone, weapon, damage)
-    if weapon == nil then return end
-    if Parts[bone] ~= nil then
-        --print("Le joueur s'est fait blesser ici : "..Parts[bone].." avec l'arme : "..weapon.." et a reçu : "..damage.." de dommage")
-        AddWound(weapon, Parts[bone], damage)
+function NewWound(bone, Injury, damage)
+    LimbInfo = GetLimbInfo(bone)
+    if LimbInfo.currentState == "normal" then
+        MedicalChange(bone, Injury, LimbInfo.currentHp - damage)
     end
 end
+
+
 
 AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
     if player ~= PlayerPedId() then return end
@@ -76,6 +99,8 @@ RegisterCommand("gethealth", function(source, args)
 end)
 
 
+
+
 -- Commande  de test ~~
 RegisterCommand("spawnaggressiveped", function(source, args)
     local pedModel = "s_m_y_hwaycop_01"
@@ -89,6 +114,12 @@ RegisterCommand("spawnaggressiveped", function(source, args)
     local ped = CreatePed(4, pedModel, pedCoords.x, pedCoords.y, pedCoords.z, pedHeading, false, true)
     GiveWeaponToPed(ped, GetHashKey(weaponModel), 1000, false, true)
     SetPedCombatAttributes(ped, 46, true)
+end)
+
+RegisterCommand("getlimbinfo", function(source, args)
+    local Limb = args[1]
+    local LimbInfo = GetLimbInfo(Limb)
+    TriggerEvent("chatMessage", "OA_Medical  ", {255, 0, 0}, " Current State : "..LimbInfo.currentState.." Current HP : "..LimbInfo.currentHp)
 end)
 
 
@@ -109,3 +140,19 @@ RegisterCommand("oa_revive", function(source, args)
         SetEntityHealth(getPlayerPed(args[1]), 200)
     end
 end)
+
+RegisterCommand("medicalcreate", function(source, args)
+    createData()
+end)
+
+RegisterCommand("medicalchange", function(source, args)
+    local bodyPart = args[1]
+    local state = args[2]
+    local hp = tonumber(args[3])
+    TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
+end)
+
+
+while true do
+    Wait(1000)
+end

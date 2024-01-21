@@ -33,3 +33,17 @@ RegisterServerEvent('OA_Medical:change', function (citizenId, bodyPart, state, h
         print("Le joueur n'est pas dans la base de données")
     end
 end)
+
+-- register a server event that get the limb info from the database
+RegisterServerEvent('OA_Medical:GetLimbInfo', function (citizenId, limb)
+    local player = source
+    local selectQuery = string.format("SELECT %s_state, %s_hp FROM OA_Medical WHERE citizen_id = '%s'", limb, limb, citizenId)
+    local result = MySQL.Sync.fetchAll(selectQuery)
+    if result and #result > 0 then
+        local currentState = result[1][limb .. "_state"]
+        local currentHp = result[1][limb .. "_hp"]
+        TriggerClientEvent('OA_Medical:SendLimbInfo', player, currentState, currentHp)
+    else
+        print("Le joueur n'est pas dans la base de données")
+    end
+end)
