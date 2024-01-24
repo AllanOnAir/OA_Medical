@@ -1,6 +1,5 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
-
 -- Variables
 local health = 200
 
@@ -34,14 +33,10 @@ function MedicalChange(bodyPart, state, hp)
     TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
 end
 
-
 -- Code de base
 local function createData()
     TriggerServerEvent('OA_Medical:CreateData', QBCore.Functions.GetPlayerData().citizenid)
 end
-
-
-
 
 function GetDamagingWeapon(ped)
     for k, v in pairs(Weapons) do
@@ -74,8 +69,6 @@ function NewWound(bone, Injury, damage)
     end
 end
 
-
-
 AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
     if player ~= PlayerPedId() then return end
     while true do
@@ -98,10 +91,7 @@ RegisterCommand("gethealth", function(source, args)
     print(health.." / "..playerHealth)
 end)
 
-
-
-
--- Commande  de test ~~
+-- Commande  de test
 RegisterCommand("spawnaggressiveped", function(source, args)
     local pedModel = "s_m_y_hwaycop_01"
     local weaponModel = "WEAPON_PISTOL"
@@ -121,7 +111,6 @@ RegisterCommand("getlimbinfo", function(source, args)
     local LimbInfo = GetLimbInfo(Limb)
     TriggerEvent("chatMessage", "OA_Medical  ", {255, 0, 0}, " Current State : "..LimbInfo.currentState.." Current HP : "..LimbInfo.currentHp)
 end)
-
 
 -- Commande admin
 RegisterCommand("oa_revive", function(source, args)
@@ -153,6 +142,57 @@ RegisterCommand("medicalchange", function(source, args)
 end)
 
 
+-- Effects
+
+local armstateL, armstateR = GetLimbInfo("armL").currentState, GetLimbInfo("armR").currentState
+local effect = false
+
+local function aimInstability()
+    if armstateR ~= "normal" or armstateL ~= "normal" then
+        if IsPlayerFreeAiming(PlayerId()) and effect == false then
+            ShakeGameplayCam("DRUNK_SHAKE", 1.9)
+            effect=true
+
+        elseif IsPlayerFreeAiming(PlayerId()) == false and effect == true then
+            StopGameplayCamShaking(true)
+            effect = false
+            -- stop cam shake
+        end
+    else
+    end
+end
+
+
+local comoeffect = false
+local function comotion()
+    if GetLimbInfo("Head").currentState == "comotion" and comoeffect == false then
+        --SetPedToRagdoll(PlayerPedId(), 10000, 1000, 0, 0, 0, 0)
+        --SetCamEffect(2)
+        -- add a color effect to the camera
+        SetTimecycleModifier("Dax_TripBase")
+        SetTimecycleModifierStrength(0.4)
+        ShakeGameplayCam("DRUNK_SHAKE", 0.9)
+        comoeffect = true
+        
+
+    elseif GetLimbInfo("Head").currentState ~= "comotion" and comoeffect == true then
+        SetCamEffect(0)
+        -- add a color effect to the camera
+        SetTimecycleModifier("default")
+        StopGameplayCamShaking(true)
+        comoeffect = false
+    end
+end
+
+-- GameLoop
 while true do
     Wait(1000)
+    aimInstability()
+    comotion()
+
+
 end
+
+
+
+
