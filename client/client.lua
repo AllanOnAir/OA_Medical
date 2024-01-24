@@ -144,10 +144,11 @@ end)
 
 -- Effects
 
-local armstateL, armstateR = GetLimbInfo("armL").currentState, GetLimbInfo("armR").currentState
+
 local effect = false
 
 local function aimInstability()
+    local armstateL, armstateR = GetLimbInfo("armL").currentState, GetLimbInfo("armR").currentState
     if armstateR ~= "normal" or armstateL ~= "normal" then
         if IsPlayerFreeAiming(PlayerId()) and effect == false then
             ShakeGameplayCam("DRUNK_SHAKE", 1.9)
@@ -162,7 +163,6 @@ local function aimInstability()
     end
 end
 
-
 local comoeffect = false
 local function comotion()
     if GetLimbInfo("Head").currentState == "comotion" and comoeffect == false then
@@ -173,8 +173,6 @@ local function comotion()
         SetTimecycleModifierStrength(0.4)
         ShakeGameplayCam("DRUNK_SHAKE", 0.9)
         comoeffect = true
-        
-
     elseif GetLimbInfo("Head").currentState ~= "comotion" and comoeffect == true then
         SetCamEffect(0)
         -- add a color effect to the camera
@@ -184,11 +182,37 @@ local function comotion()
     end
 end
 
+local legEffect = false
+local function brokenLeg()
+    local legLState = GetLimbInfo("legL").currentState
+    local legRState = GetLimbInfo("legR").currentState
+
+    if legLState == "broken" or legRState == "broken" then
+        if not legEffect then
+            RequestAnimSet("move_m@injured")
+            while not HasAnimSetLoaded("move_m@injured") do
+                Wait(0)
+            end
+            SetPedMovementClipset(PlayerPedId(), "move_m@injured", true)
+            legEffect = true
+        end
+
+        if math.random(1, 20) > 18 then
+            SetPedToRagdoll(PlayerPedId(), 10000, 1000, 0, 0, 0, 0)
+        end
+    elseif legEffect then
+        ResetPedMovementClipset(PlayerPedId(), 0.0)
+        legEffect = false
+    end
+end
+
 -- GameLoop
 while true do
     Wait(1000)
-    aimInstability()
-    comotion()
+    aimInstability()    -- Arm Effects
+    comotion()          -- Head Effects  
+    brokenLeg()         -- Leg Effects -- Mal optimiser sa mère
+
 
 
 end
