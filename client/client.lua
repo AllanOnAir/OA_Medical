@@ -2,6 +2,12 @@ local QBCore = exports['qb-core']:GetCoreObject()
 
 -- Variables
 local health = 200
+-- Effects Variables
+local effect = false
+local comoeffect = false
+local legEffect = false
+local isConcus, armBroken, legBroken = false, false, false
+
 
 -- Functions Reutilisable
 
@@ -30,7 +36,33 @@ function GetLimbInfo(Limb)
 end
 
 function MedicalChange(bodyPart, state, hp)
+    print("bodyPart : "..bodyPart.." state : "..state.." hp : "..hp)
+
+    if bodyPart == "head" then
+        if state == "comotion" then
+            print("comotion")
+            isConcus = true
+        else
+            isConcus = false
+        end
+    end
+    if bodyPart == "armL" or bodyPart == "armR" then
+        if state == "fracture" then
+            armBroken = true
+        else
+            armBroken = false
+        end
+    end
+    if bodyPart == "legL" or bodyPart == "legR" then
+        if state == "fracture" then
+            legBroken = true
+        else
+            legBroken = false
+        end
+    end
     TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
+
+
 end
 
 -- Code de base
@@ -138,56 +170,48 @@ RegisterCommand("medicalchange", function(source, args)
     local bodyPart = args[1]
     local state = args[2]
     local hp = tonumber(args[3])
-    TriggerServerEvent("OA_Medical:change", QBCore.Functions.GetPlayerData().citizenid, bodyPart, state, hp)
+    MedicalChange(bodyPart, state, hp)
+    
 end)
-
 
 -- Effects
 
-
-local effect = false
-
 local function aimInstability()
-    local armstateL, armstateR = GetLimbInfo("armL").currentState, GetLimbInfo("armR").currentState
-    if armstateR ~= "normal" or armstateL ~= "normal" then
-        if IsPlayerFreeAiming(PlayerId()) and effect == false then
-            ShakeGameplayCam("DRUNK_SHAKE", 1.9)
-            effect=true
+    --local armstateL = GetLimbInfo("armL").currentState
+    --local armstateR = GetLimbInfo("armR").currentState
 
-        elseif IsPlayerFreeAiming(PlayerId()) == false and effect == true then
+    if armBroken then
+        if IsPlayerFreeAiming(PlayerId()) and not effect then
+            ShakeGameplayCam("DRUNK_SHAKE", 1.9)
+            effect = true
+        elseif not IsPlayerFreeAiming(PlayerId()) and effect then
             StopGameplayCamShaking(true)
             effect = false
-            -- stop cam shake
         end
-    else
     end
 end
 
-local comoeffect = false
 local function comotion()
-    if GetLimbInfo("Head").currentState == "comotion" and comoeffect == false then
-        --SetPedToRagdoll(PlayerPedId(), 10000, 1000, 0, 0, 0, 0)
-        --SetCamEffect(2)
-        -- add a color effect to the camera
+    --local headState = GetLimbInfo("Head").currentState
+
+    if isConcus and not comoeffect then
+        print("comotion")
         SetTimecycleModifier("Dax_TripBase")
         SetTimecycleModifierStrength(0.4)
         ShakeGameplayCam("DRUNK_SHAKE", 0.9)
         comoeffect = true
-    elseif GetLimbInfo("Head").currentState ~= "comotion" and comoeffect == true then
-        SetCamEffect(0)
-        -- add a color effect to the camera
+    elseif isConcus == false and comoeffect then
         SetTimecycleModifier("default")
         StopGameplayCamShaking(true)
         comoeffect = false
     end
 end
 
-local legEffect = false
 local function brokenLeg()
-    local legLState = GetLimbInfo("legL").currentState
-    local legRState = GetLimbInfo("legR").currentState
+    --local legLState = GetLimbInfo("legL").currentState
+    --local legRState = GetLimbInfo("legR").currentState
 
-    if legLState == "broken" or legRState == "broken" then
+    if legBroken then
         if not legEffect then
             RequestAnimSet("move_m@injured")
             while not HasAnimSetLoaded("move_m@injured") do
@@ -206,16 +230,43 @@ local function brokenLeg()
     end
 end
 
--- GameLoop
-while true do
-    Wait(1000)
-    aimInstability()    -- Arm Effects
-    comotion()          -- Head Effects  
-    brokenLeg()         -- Leg Effects -- Mal optimiser sa mère
+-- Events
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    if createData() == false then return end
+    -- sync data with the effects
+    local headState = GetLimbInfo("head").currentState
+    local armLState = GetLimbInfo("armL").currentState
+    local armRState = GetLimbInfo("armR").currentState
+    local legLState = GetLimbInfo("legL").currentState
+    local legRState = GetLimbInfo("legR").currentState
+
+    Wait(5000)
+    if armLState == "fracture" or armRState == "fracture" then
+        armBroken = true
+    end
+    if legLState == "fracture" or legRState == "fracture" then
+        legBroken = true
+    end
+    
+    if headState == "comotion" then
+        isConcus = true
+    end
+end)
 
 
 
-end
+
+-- Game Loop
+
+Citizen.CreateThread(function()
+    while true do
+        Wait(1000)
+        aimInstability()
+        comotion()
+        brokenLeg()
+    end
+end)
 
 
 

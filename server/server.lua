@@ -10,11 +10,10 @@ RegisterServerEvent('OA_Medical:CreateData', function (citizenId)
     local selectQuery = string.format("SELECT * FROM OA_Medical WHERE citizen_id = '%s'", citizenId)
     local result = MySQL.Sync.fetchAll(selectQuery)
     if result and #result > 0 then
-        print("Le joueur est dans la base de données")
+        return true
     else
-        print("Le joueur n'est pas dans la base de données")
-
         MySQL.query(string.format("INSERT INTO OA_Medical (citizen_id, armL_state, armL_hp, armR_state, armR_hp, legL_state, legL_hp, legR_state, legR_hp, head_state, head_hp, torso_state, torso_hp) VALUES ('%s', 'normal', 100, 'normal', 100, 'normal', 100, 'normal', 100, 'normal', 100, 'normal', 100)", citizenId))
+        return false
     end
 end)
 
