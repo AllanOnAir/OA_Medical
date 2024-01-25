@@ -118,12 +118,13 @@ AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
     end
 end)
 
+-- Commande  de test
+
 RegisterCommand("gethealth", function(source, args)
     local playerHealth = GetEntityHealth(PlayerPedId())
     print(health.." / "..playerHealth)
 end)
 
--- Commande  de test
 RegisterCommand("spawnaggressiveped", function(source, args)
     local pedModel = "s_m_y_hwaycop_01"
     local weaponModel = "WEAPON_PISTOL"
@@ -231,6 +232,26 @@ local function brokenLeg()
 end
 
 -- Events
+local function syncData()
+        -- sync data with the effects
+        local headState = GetLimbInfo("head").currentState
+        local armLState = GetLimbInfo("armL").currentState
+        local armRState = GetLimbInfo("armR").currentState
+        local legLState = GetLimbInfo("legL").currentState
+        local legRState = GetLimbInfo("legR").currentState
+    
+        Wait(5000)
+        if armLState == "fracture" or armRState == "fracture" then
+            armBroken = true
+        end
+        if legLState == "fracture" or legRState == "fracture" then
+            legBroken = true
+        end
+        
+        if headState == "comotion" then
+            isConcus = true
+        end
+end
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     if createData() == false then return end
@@ -244,18 +265,31 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     Wait(5000)
     if armLState == "fracture" or armRState == "fracture" then
         armBroken = true
+    else 
+        armBroken = false
     end
     if legLState == "fracture" or legRState == "fracture" then
         legBroken = true
+    else
+        legBroken = false
     end
     
     if headState == "comotion" then
         isConcus = true
+    else
+        isConcus = false
     end
 end)
 
+AddEventHandler('onResourceStart', function(OA_Medical)
+    syncData()
+end)
 
-
+AddEventHandler('onResourceStop', function(OA_Medical)
+    ResetPedMovementClipset(PlayerPedId(), 0.0)
+    StopGameplayCamShaking(true)
+    SetTimecycleModifier("default")
+end)
 
 -- Game Loop
 
