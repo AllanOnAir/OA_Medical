@@ -8,6 +8,8 @@ local comoeffect = false
 local legEffect = false
 local isConcus, armBroken, legBroken = false, false, false
 
+local pulse = 0
+
 
 -- Functions Reutilisable
 
@@ -101,22 +103,7 @@ function NewWound(bone, Injury, damage)
     end
 end
 
-AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
-    if player ~= PlayerPedId() then return end
-    while true do
-        local hit, bone = GetPedLastDamageBone(player)
-        if hit and bone ~= lastBone and Parts[bones] ~= 'NONE' then
-            LastBone = bone
-            newHealth = GetEntityHealth(PlayerPedId())
-            local damage = health - newHealth
-            if damage <= 0 then break end
-            CheckDamage(player, bone, GetDamagingWeapon(player), damage)
-            health = newHealth
-            break
-        end
-        Wait(100)
-    end
-end)
+
 
 -- Commande  de test
 
@@ -232,6 +219,7 @@ local function brokenLeg()
 end
 
 -- Events
+
 local function syncData()
         -- sync data with the effects
         local headState = GetLimbInfo("head").currentState
@@ -281,6 +269,7 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     end
 end)
 
+
 AddEventHandler('onResourceStart', function(OA_Medical)
     syncData()
 end)
@@ -290,6 +279,37 @@ AddEventHandler('onResourceStop', function(OA_Medical)
     StopGameplayCamShaking(true)
     SetTimecycleModifier("default")
 end)
+
+AddEventHandler('entityDamaged', function(player, culprit, _, basedamage)
+    if player ~= PlayerPedId() then return end
+    while true do
+        local hit, bone = GetPedLastDamageBone(player)
+        if hit and bone ~= lastBone and Parts[bones] ~= 'NONE' then
+            LastBone = bone
+            newHealth = GetEntityHealth(PlayerPedId())
+            local damage = health - newHealth
+            if damage <= 0 then break end
+            CheckDamage(player, bone, GetDamagingWeapon(player), damage)
+            health = newHealth
+            break
+        end
+        Wait(100)
+    end
+end)
+
+AddEventHandler('playerSpawned', function()
+    health = GetEntityHealth(PlayerPedId())
+end)
+
+-- On Entity Death
+AddEventHandler('baseevents:onPlayerDied', function()
+    print("Player Died")
+    pulse = 0
+    TriggerServerEvent("OA_Medical:playerDead", QBCore.Functions.GetPlayerData().citizenid)
+end)
+
+-- QB Target Functions / diagnositic on the targeted player
+
 
 -- Game Loop
 
@@ -301,7 +321,3 @@ Citizen.CreateThread(function()
         brokenLeg()
     end
 end)
-
-
-
-
